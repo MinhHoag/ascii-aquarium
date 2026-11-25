@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pixel Reef · Phone Controller</title><link rel="stylesheet" href="reef.css"><script src="phone.js" defer></script></head>
+<body><main class="shell remote">
+<header><a class="brand" href="./"><span aria-hidden="true">&gt;&lt;&gt;</span> PIXEL REEF</a></header>
+<section class="intro"><p class="eyebrow">BLUETOOTH CONTROLLER</p><h1>Feed the <em>reef</em></h1><p>Open this page in Bluefy and keep Pixel Reef running on your laptop.</p></section>
+<section class="frame remote-controls" aria-label="Phone controls">
+<pre class="remote-fish" aria-hidden="true">   o
+  .
+&gt;&lt;(((o&gt;</pre>
+<label for="code">Laptop pairing code</label>
+<input id="code" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" placeholder="6 digits">
+<button class="primary" id="connect">Connect aquarium</button>
+<button id="send" disabled>Feed the fish</button>
+<label class="check"><input type="checkbox" id="auto"> Feed on reconnect</label>
+<p class="hint">Reconnect uses Bluetooth range. Keep this page open. Locked-screen behavior depends on Bluefy and iOS.</p>
+<p id="message" role="status">Waiting to connect.</p>
+</section></main></body></html>

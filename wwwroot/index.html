@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASCII Aquarium</title><link rel="stylesheet" href="reef.css?v=wallpaper-controls">
+<script src="reef.js?v=desktop" defer></script><script src="wallpaper.js?v=desktop" defer></script></head>
+<body class="aquarium">
+<main class="shell">
+<section class="intro"><h1>ASCII <em>Aquarium</em></h1></section>
+<section class="frame" aria-label="ASCII aquarium">
+<div class="bar"><span class="rec" aria-hidden="true"><b class="dot"></b> REC</span>
+<button id="fullscreen" class="fullscreen-toggle" type="button" aria-label="Enter fullscreen" aria-pressed="false" title="Enter fullscreen">
+<svg class="expand-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9 3 3m0 5V3h5m7 6 6-6m-5 0h5v5m-6 7 6 6m0-5v5h-5m-7-6-6 6m5 0H3v-5"/></svg>
+<svg class="collapse-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 6 6m0-5v5H4m17-6-6 6m5 0h-5V4m6 17-6-6m0 5v-5h5M3 21l6-6m-5 0h5v5"/></svg>
+</button><div class="tank-actions"><button id="add-fish">Add fish <span id="fish-count" aria-live="polite">(6/16)</span></button><button id="reset-tank" type="button" title="Reset to six fish">Reset fish</button></div></div>
+<div class="tank">
+<div id="tank-wallpaper" class="tank-wallpaper" aria-hidden="true" hidden>
+<time id="wallpaper-clock" class="wallpaper-clock"></time>
+<div id="wallpaper-message" class="wallpaper-message" hidden></div>
+<div id="wallpaper-caption" class="wallpaper-caption" hidden></div>
+</div>
+<canvas id="tank" tabindex="0" aria-label="ASCII aquarium. Use arrow keys to move the selected decoration."></canvas><button id="drop-zone" class="drop-zone" aria-label="Drop food at the water surface" title="Click the surface to drop food here"></button></div>
+<div class="controls"><div><small>FEEDINGS</small><strong id="meals">0</strong></div><div><small>LAST FED</small><strong id="last">—</strong></div><button id="feed" class="primary">Feed the fish <span aria-hidden="true">+</span></button></div>
+<details id="customize" class="customize">
+<summary><span class="quick-chevron" aria-hidden="true"></span>Customize tank</summary>
+<div class="customize-content">
+<div class="editor-tabs" role="tablist" aria-label="Customize tank">
+<button id="tab-decor" role="tab" aria-controls="panel-decor" aria-selected="true">Add items</button>
+<button id="tab-installed" role="tab" aria-controls="panel-installed" aria-selected="false" tabindex="-1">In the tank</button>
+<button id="tab-fish" role="tab" aria-controls="panel-fish" aria-selected="false" tabindex="-1">Fish</button>
+<button id="tab-wallpaper" role="tab" aria-controls="panel-wallpaper" aria-selected="false" tabindex="-1">Wallpaper</button>
+</div>
+<div class="editor">
+<div class="editor-workspace">
+<section id="panel-decor" role="tabpanel" aria-labelledby="tab-decor">
+<div class="library-switch" aria-label="Item category">
+<button id="show-decor" aria-pressed="true" aria-controls="asset-library">Decorations</button>
+<button id="show-personal" aria-pressed="false" aria-controls="personal-items">Personalize</button>
+</div>
+<div id="asset-library" class="asset-library" aria-label="Decoration previews"></div>
+<div id="personal-items" hidden>
+<div id="personal-library" class="asset-library" aria-label="Personal item previews"></div>
+<div class="personal-form">
+<label id="word-field" hidden>Text <input id="word-input" type="text" maxlength="28" placeholder="Your words"></label>
+<label id="image-field" hidden>Image to convert to ASCII <input id="image-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif"></label>
+<label id="timer-field" hidden>Minutes <input id="timer-input" type="number" min="1" max="99" step="1" value="5"></label>
+<p id="timer-help" class="editor-hint" hidden>Once finished, hold and shake the globe or drop it from near the surface to restart.</p>
+<button id="add-personal" class="primary">Add to tank</button>
+<p id="personal-status" role="status" hidden></p>
+</div>
+<pre id="ascii-photo-preview" class="ascii-photo-preview" aria-label="Imported ASCII photo preview" hidden></pre>
+</div>
+</section>
+<section id="panel-fish" role="tabpanel" aria-labelledby="tab-fish" hidden>
+<div class="editor-settings fish-settings">
+<label>Pellets per pass <input id="pass-limit" type="number" min="1" max="6" step="1" value="3"></label>
+<label>Cooldown (seconds) <input id="pass-cooldown" type="number" min="0.2" max="3" step="0.1" value="0.7"></label>
+</div>
+</section>
+<section id="panel-wallpaper" role="tabpanel" aria-labelledby="tab-wallpaper" hidden>
+<div class="editor-settings wallpaper-settings">
+<label>Display <select id="wallpaper-mode"><option value="off">Off</option><option value="clock">Clock</option><option value="text">Custom text</option></select></label>
+<label id="wallpaper-message-field" hidden>Main text <input id="wallpaper-message-input" type="text" maxlength="40" placeholder="Your words"></label>
+<label>Bottom line <select id="wallpaper-caption-mode"><option value="date">Date</option><option value="text">Custom text</option><option value="none">Hidden</option></select></label>
+<label id="wallpaper-caption-field" hidden>Bottom text <input id="wallpaper-caption-input" type="text" maxlength="48" placeholder="Your caption"></label>
+<label>Size <span class="wallpaper-range"><input id="wallpaper-size" type="range" min="50" max="145" step="5" value="100"><output id="wallpaper-size-value" for="wallpaper-size">100%</output></span></label>
+<label>Brightness <span class="wallpaper-range"><input id="wallpaper-opacity" type="range" min="10" max="45" step="1" value="24"><output id="wallpaper-opacity-value" for="wallpaper-opacity">24%</output></span></label>
+</div>
+<div class="wallpaper-footer"><p class="editor-hint">The wallpaper appears behind the fish in fullscreen.</p><button id="wallpaper-reset" type="button">Reset wallpaper</button></div>
+</section>
+</div>
+<section id="panel-installed" role="tabpanel" class="placed-panel" aria-labelledby="tab-installed" hidden>
+<div class="placed-heading"><h2 id="placed-heading">In the tank</h2><span id="placed-count"></span></div>
+<ul id="placed-assets" class="placed-assets"></ul>
+<div id="item-appearance" class="editor-settings" hidden>
+<label id="item-color-label" for="item-color">Frame color</label><input id="item-color" type="color">
+<label for="item-size">Size</label><input id="item-size" type="range" min="60" max="175" step="1" value="100"><output id="item-size-value" for="item-size">100%</output>
+<span id="resize-hint" class="editor-hint" hidden>Drag a corner to resize the selected item.</span>
+</div>
+<button id="remove-decoration" disabled>Remove selected</button>
+<p class="editor-hint">Drag items in the tank or select one here and use arrow keys while the tank is focused.</p>
+</section>
+</div>
+</div>
+</details>
+</section>
+<p id="status" role="status" hidden></p>
+</main>
+</body></html>
