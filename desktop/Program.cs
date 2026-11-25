@@ -122,10 +122,6 @@ internal sealed class AquariumWindow : Form
             if (!IsDisposed)
                 Reply(args, Stream.Null, "text/plain", 500, "Internal Server Error");
         }
-        finally
-        {
-            deferral.Complete();
-        }
     }
 
     private object TankState() => new { meals, last, source = meals > 0 ? "Desktop" : "" };
