@@ -36,6 +36,7 @@ internal sealed class AquariumWindow : Form
     public AquariumWindow()
     {
         Text = "ASCII Aquarium";
+        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         BackColor = Color.FromArgb(8, 8, 8);
         ClientSize = new Size(1150, 740);
         MinimumSize = new Size(340, 360);
