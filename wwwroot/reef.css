@@ -193,3 +193,9 @@ footer{display:flex;justify-content:space-between;gap:10px;color:var(--muted);fo
 #fish-roster form{grid-template-columns:minmax(0,1.3fr) minmax(90px,1fr)}
 #fish-roster span{display:flex;align-items:center;justify-content:center;text-align:center;width:100%;box-sizing:border-box;font-size:clamp(13px,2vw,18px)}
 @media(max-width:480px){.fish-menu summary{font-size:12px;padding:10px 8px;gap:4px}.controls{gap:6px}}
+
+.fish-menu summary,.is-fullscreen .customize summary{font:650 14px system-ui,sans-serif;height:42px;padding:0 14px;gap:8px}
+.fish-menu summary{background:rgb(255 255 255 / 78%);color:#141414}
+.is-fullscreen .fish-menu{margin-bottom:4px}
+.fish-menu summary:before{content:'';width:6px;height:6px;border-top:2px solid;border-left:2px solid;transform:translateY(2px) rotate(45deg)}
+.fish-menu[open] summary:before{content:'';transform:translateY(-2px) rotate(225deg)}

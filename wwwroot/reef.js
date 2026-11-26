@@ -158,6 +158,22 @@ decorations.push(
   {name:'Now playing', kind:'turntable', resizable:true, color:'#c1d7da',
     rows:['+---------------+','|   .----.   o  |','|  / .--. \\ /   |','|  \\ \'--\' /\'    |','|   \'----\'      |','+---------------+']}
 );
+decorations.push(
+  {name:'Basalt arch', at:.22, color:'#92a7bb', rows:[
+    '     .---.__', '  __/ .   . \\', ' / .  .---.  |', '|  . /     | |', '|___/      |_/']},
+  {name:'Sea fan', at:.44, coral:true, color:'#f36bb5', tips:'#ffb1d9', rows:[
+    '  *-*-* *-*-*', ' /|/|/ Y \\|\\|\\', ' \\|-+--+--+-|/', '  \\_|\\ | /|_/', '     \\| |/', '    __|_|__']},
+  {name:'Tube sponges', at:.57, coral:true, color:'#f28c56', tips:'#ffe0a0', rows:[
+    '       (oo)', ' (o)   |::| (o)', ' |:|   |::| |:|', ' |:|___|::|_|:|', ' \\____________/']},
+  {name:'Sunken observatory', at:.80, color:'#d3b281', rows:[
+    '       _', '    .-^- -.', '   /   O   \\', '  /___|_|___\\', '  | []   [] |', ' _|___[_]___|_']},
+  {name:'Ribbon kelp', color:'#a0ec83', plant:true, rows:[
+    '        _/', '  __   /_/ ', ' /_/  /_/  ', '   \\ /_/', '    Y /', '    |/', '  __|__']},
+  {name:'Feather fern', color:'#65e5b4', plant:true, rows:[
+    '      ^', '    < | >', '   <==|==>', '    <=|=>', '     <|>', '      |', '   ___|___']},
+  {name:'Eelgrass tuft', color:'#70c99c', plant:true, rows:[
+    '  /     /', ' /   / /', ' | / |/  /', '  Y  |  /', '   \\ | /', '  __\\|/___']}
+);
 const layoutKey = 'ascii-aquarium-layout';
 function loadLayout() {
   try {
@@ -340,14 +356,15 @@ function assetCard(asset,action) {
   card.append(preview,label);
   return card;
 }
-const addCards = decorations.slice(0,firstPersonal).map((asset,type)=>{
+const addCards = decorations.flatMap((asset,type)=>{
+  if (asset.kind) return [];
   const card = assetCard(asset,()=>addItem(type));
   card.setAttribute('aria-label','Add '+asset.name);
   return card;
 });
 get('asset-library').replaceChildren(...addCards);
-const personalCards = decorations.slice(firstPersonal).map((asset,i)=>assetCard(asset,()=>{
-  personalType = firstPersonal+i;
+const personalCards = decorations.filter(asset=>asset.kind).map(asset=>assetCard(asset,()=>{
+  personalType = decorations.indexOf(asset);
   updatePersonal();
 }));
 get('personal-library').replaceChildren(...personalCards);
@@ -696,7 +713,8 @@ function addItem(type,extra={}) {
   if (layout.length >= 48) return;
   const asset = decorations[type];
   const size = asset.plant || asset.coral ? 75+Math.floor(Math.random()*61) : 100;
-  const item = {type,size,at:.44+Math.random()*.12,level:type>=firstPersonal ? .65 : 1,...extra};
+  const heightScale = asset.plant || asset.coral ? .75+Math.random()*.55 : 1;
+  const item = {type,size,heightScale,at:.44+Math.random()*.12,level:asset.kind ? .65 : 1,...extra};
   layout.push(item);
   if (decorations[type].kind === 'timer' && item.endsAt>Date.now()) {
     armedTimers.add(item);
@@ -995,7 +1013,7 @@ function makeScenery(item,i) {
   const asset = decorations[item.type];
   const sizeFactor = appearanceSize(item)/100;
   const piece = {...asset,item,phase:i,color:appearanceColor(item,asset),
-    rowPitch:asset.kind === 'photo' ? photoRowPitch : .87,
+    rowPitch:asset.kind === 'photo' ? photoRowPitch : .87*(item.heightScale ?? 1),
     size:unit*(asset.plant ? (i%2 ? .93 : 1.28) : .96)};
   if (asset.kind === 'timer') piece.size *= .67;
   if (asset.kind === 'words') piece.rows = [String(item.text || 'ASCII').slice(0,28)];
