@@ -218,13 +218,25 @@ const tabs = ['tab-decor','tab-installed','tab-fish','tab-wallpaper'].map(get);
 let selected = null, drag = null, personalType = firstPersonal, photoData = null, photoLoading = false;
 const frame = canvas.closest('.frame');
 const fullscreenButton = get('fullscreen');
+const desktopApp = window.aquariumStartsFullscreen === true;
+const firstRun = get('first-run');
+if (desktopApp) {
+  fullscreenButton.hidden = true;
+  get('close-app').hidden = false;
+  get('close-app').onclick = ()=>window.chrome.webview.postMessage({type:'aquarium-close'});
+  firstRun.addEventListener('cancel',event=>event.preventDefault());
+  firstRun.addEventListener('close',()=>{
+    try { localStorage.setItem('ascii-aquarium-guide-seen','1'); } catch {}
+  });
+  if (localStorage.getItem('ascii-aquarium-guide-seen') !== '1') firstRun.showModal();
+}
 let fullscreenFallback = window.aquariumStartsFullscreen === true, editorIdleTimer;
 
 function resetEditorIdle() {
   clearTimeout(editorIdleTimer);
   if (!frame.classList.contains('is-fullscreen') || !editor.open) return;
   editorIdleTimer = setTimeout(()=>{
-    if (drag || photoLoading) {
+    if (drag || panelDrag || photoLoading) {
       resetEditorIdle();
       return;
     }
@@ -262,7 +274,7 @@ fullscreenButton.onclick = async ()=>{
 };
 document.addEventListener('fullscreenchange',updateFullscreen);
 document.addEventListener('keydown',event=>{
-  if (event.key !== 'Escape' || !fullscreenFallback) return;
+  if (event.key !== 'Escape' || !fullscreenFallback || desktopApp) return;
   fullscreenFallback = false;
   updateFullscreen();
 });
@@ -274,7 +286,7 @@ editor.addEventListener('toggle',()=>{
   }
 });
 let panelOffset = {x:0,y:0}, panelDrag = null, panelMoved = false;
-const panelHandle = editor.querySelector('summary');
+const panelHandle = get('customize-drag');
 panelHandle.addEventListener('pointerdown',event=>{
   if (!editor.open || !frame.classList.contains('is-fullscreen') || event.button !== 0) return;
   panelDrag = {x:event.clientX,y:event.clientY,offset:{...panelOffset},box:editor.getBoundingClientRect()};
@@ -295,12 +307,6 @@ panelHandle.addEventListener('pointermove',event=>{
   resetEditorIdle();
 });
 panelHandle.addEventListener('lostpointercapture',()=>{panelDrag=null;});
-panelHandle.addEventListener('click',event=>{
-  if (panelMoved) {
-    event.preventDefault();
-    panelMoved = false;
-  }
-});
 for (const event of ['pointermove','pointerdown','wheel','keydown','input','focusin','scroll']) {
   editor.addEventListener(event,resetEditorIdle,{passive:true});
 }
@@ -765,6 +771,20 @@ function addItem(type,extra={}) {
   saveLayout();
   if (decorations[type].kind === 'turntable') refreshTrack();
 }
+get('export-tank').onclick = ()=>{
+  const settings = key=>JSON.parse(localStorage.getItem(key) ?? 'null');
+  const snapshot = {
+    layout:layout.map(item=>({...item,assetName:decorations[item.type].name})),
+    wallpaper:settings('ascii-aquarium-wallpaper'),
+    namedFish:settings('ascii-aquarium-named-fish')
+  };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}));
+  const download = document.createElement('a');
+  download.href = url;
+  download.download = 'aquarium-setup.json';
+  download.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
 get('remove-decoration').onclick = () => {
   if (!selected) return;
   layout.splice(layout.indexOf(selected),1);

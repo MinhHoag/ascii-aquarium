@@ -212,3 +212,16 @@ footer{display:flex;justify-content:space-between;gap:10px;color:var(--muted);fo
 .aquarium #remove-decoration:not(:disabled):hover{background:#87303a}
 
 #fish-roster span{display:block;text-align:center;line-height:1.05}
+
+#fullscreen[hidden],#close-app[hidden]{display:none}
+#close-app{width:36px;height:36px;padding:0;border-color:#bd505c;background:#742631;color:#fff;font-size:25px;line-height:1;flex:none}
+#close-app:hover{background:#a43344}
+.bar:has(#close-app:not([hidden])) .rec{margin-right:auto}
+.customize-drag{display:none}
+.is-fullscreen .customize[open] .customize-drag{display:grid;height:22px;place-items:center;cursor:grab;touch-action:none}
+.customize-drag::before{content:'';width:34px;height:4px;border-radius:4px;background:#777}
+.is-fullscreen .customize[open] summary{cursor:pointer;touch-action:auto}
+#first-run{max-width:min(480px,calc(100vw - 32px));padding:22px;border:1px solid #555;border-radius:14px;background:#171717;color:#eee}
+#first-run::backdrop{background:#0008}
+#first-run h2{margin-top:0}
+#first-run li{margin:.7rem 0;line-height:1.45}

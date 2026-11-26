@@ -7,11 +7,21 @@
 <main class="shell">
 <section class="intro"><h1>ASCII <em>Aquarium</em></h1></section>
 <section class="frame" aria-label="ASCII aquarium">
-<div class="bar"><span class="rec" aria-hidden="true"><b class="dot"></b> REC</span>
+<div class="bar"><button id="close-app" type="button" aria-label="Close Aquarium" title="Close Aquarium" hidden>×</button><span class="rec" aria-hidden="true"><b class="dot"></b> REC</span>
 <button id="fullscreen" class="fullscreen-toggle" type="button" aria-label="Enter fullscreen" aria-pressed="false" title="Enter fullscreen">
 <svg class="expand-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9 3 3m0 5V3h5m7 6 6-6m-5 0h5v5m-6 7 6 6m0-5v5h-5m-7-6-6 6m5 0H3v-5"/></svg>
 <svg class="collapse-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 6 6m0-5v5H4m17-6-6 6m5 0h-5V4m6 17-6-6m0 5v-5h5M3 21l6-6m-5 0h5v5"/></svg>
 </button><div class="tank-actions"><button id="add-fish">Add fish <span id="fish-count" aria-live="polite">(6/16)</span></button><button id="reset-tank" type="button" title="Reset to six fish">Reset fish</button></div></div>
+<dialog id="first-run" aria-labelledby="guide-title">
+<h2 id="guide-title">Welcome to ASCII Aquarium</h2>
+<ul>
+<li>Click the water surface to drop food.</li>
+<li>Use <b>Add fish</b> to grow your school. Open <b>Fish</b> to name and save up to four.</li>
+<li>Open <b>Customize tank</b> to add items or select them in <b>In the tank</b>. Drag the top grip to move the panel, or drag items directly in the tank.</li>
+<li>Use the red <b>×</b> at the top left to close the desktop app.</li>
+</ul>
+<form method="dialog"><button class="primary" autofocus>Start exploring</button></form>
+</dialog>
 <div class="tank">
 <div id="tank-wallpaper" class="tank-wallpaper" aria-hidden="true" hidden>
 <time id="wallpaper-clock" class="wallpaper-clock"></time>
@@ -22,6 +32,7 @@
 <div class="controls"><div><small>FEEDINGS</small><strong id="meals">0</strong></div><div><small>LAST FED</small><strong id="last">—</strong></div><details id="fish-menu" class="fish-menu"><summary>Fish · <span id="named-count">0/4 named</span></summary><div class="fish-menu-content"><p class="fish-name-help">Type a name to save that fish automatically. Edit it anytime, or clear it to free a slot. Up to four named fish stay with you after reopening.</p><div id="fish-roster"></div><p id="fish-name-status" role="status"></p></div></details></div>
 <details id="customize" class="customize">
 <summary><span class="quick-chevron" aria-hidden="true"></span>Customize tank</summary>
+<div id="customize-drag" class="customize-drag" aria-hidden="true"></div>
 <div class="customize-content">
 <div class="editor-tabs" role="tablist" aria-label="Customize tank">
 <button id="tab-decor" role="tab" aria-controls="panel-decor" aria-selected="true">Add items</button>
@@ -76,7 +87,7 @@
 <label for="item-size">Size</label><input id="item-size" type="range" min="60" max="175" step="1" value="100"><output id="item-size-value" for="item-size">100%</output>
 <span id="resize-hint" class="editor-hint" hidden>Drag a corner to resize the selected item.</span>
 </div>
-<button id="remove-decoration" disabled>Remove selected</button>
+<button id="remove-decoration" disabled>Remove selected</button> <button id="export-tank" type="button">Export tank</button>
 <p class="editor-hint">Drag items in the tank or select one here and use arrow keys while the tank is focused.</p>
 </section>
 </div>

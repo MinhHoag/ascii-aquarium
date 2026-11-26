@@ -146,8 +146,16 @@ internal sealed class AquariumWindow : Form
         using var message = JsonDocument.Parse(args.WebMessageAsJson);
         var root = message.RootElement;
         if (root.ValueKind != JsonValueKind.Object ||
-            !root.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String ||
-            type.GetString() != "aquarium-fullscreen" || !root.TryGetProperty("active", out var active) ||
+            !root.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String)
+            return;
+
+        if (type.GetString() == "aquarium-close")
+        {
+            Close();
+            return;
+        }
+
+        if (type.GetString() != "aquarium-fullscreen" || !root.TryGetProperty("active", out var active) ||
             active.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
             return;
 
