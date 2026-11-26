@@ -1492,11 +1492,10 @@ function currentShape(f) {
     const taper = Math.sin(Math.PI*along);
     const base = {pear:.1,puffer:.27,carp:.16,oval:.06}[f.profile] ?? 0;
     const roundness = f.profile === 'oval' ? Math.sqrt(taper) : taper;
-    const bellyCurve = Math.sqrt(Math.max(0,1-(2*along-1)**2));
-    const pear = f.profile === 'pear' ? .85+.3*along : 1;
-    return 1+base*roundness+fullness*Math.min(1,f.body.length/6)*bellyCurve*pear;
+    const pear = f.profile === 'pear' ? .7+.6*along : 1;
+    return 1+base*roundness+fullness*Math.min(1,f.body.length/6)*(.22+.78*roundness)*pear;
   });
-  const widths = scales.map(scale=>1+(scale-1)*(f.profile === 'puffer' ? .95 : .8));
+  const widths = scales.map(scale=>1+(scale-1)*(f.profile === 'puffer' ? .8 : .6));
   const bodyWidth = cell*widths.reduce((sum,scale)=>sum+scale,0);
   return {scales,widths,bodyWidth,span:bodyWidth+(f.head.length+f.tail.length)*cell};
 }
@@ -1760,7 +1759,7 @@ function draw(now) {
       const index = f.dir === 1 ? i : body.length-1-i;
       const scale = scales[index];
       const stretch = widths[index];
-      const bellyOffset = f.profile === 'pear' ? .39 : f.profile === 'carp' ? .23 : .29;
+      const bellyOffset = f.profile === 'pear' ? .48 : f.profile === 'carp' ? .15 : .27;
       ctx.save();
       ctx.translate(glyphX,0);
       ctx.scale(stretch/scale,1);
