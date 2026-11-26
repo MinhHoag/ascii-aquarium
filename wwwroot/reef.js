@@ -59,21 +59,19 @@ function renderFishRoster() {
     input.maxLength = 20;
     input.placeholder = 'Fish '+(i+1);
     input.setAttribute('aria-label','Name fish '+(i+1));
-    const button = document.createElement('button');
-    button.textContent = 'Save';
-    button.type = 'submit';
-    row.onsubmit = event=>{
-      event.preventDefault();
+    row.onsubmit = event=>event.preventDefault();
+    input.oninput = ()=>{
       const name = input.value.trim();
       if (name && !f.name && fish.filter(other=>other.name).length>=4) {
         get('fish-name-status').textContent = 'All four name slots are filled. Clear a saved name to free one.';
+        input.value = '';
         return;
       }
       f.name = name;
       saveNamedFish();
-      renderFishRoster();
+      get('named-count').textContent = fish.filter(other=>other.name).length+'/4 named';
     };
-    row.append(preview,input,button);
+    row.append(preview,input);
     return row;
   }));
 }
@@ -1760,7 +1758,6 @@ requestAnimationFrame(draw);
 
 let sendingFeed = false;
 function lockFeeding(locked) {
-  get('feed').disabled = locked;
   get('drop-zone').disabled = locked;
 }
 
@@ -1788,7 +1785,7 @@ async function refresh() {
   }
 }
 async function feedAt(entry) {
-  if (sendingFeed || get('feed').disabled) return;
+  if (sendingFeed || get('drop-zone').disabled) return;
   sendingFeed = true;
   lockFeeding(true);
   try {
@@ -1805,7 +1802,6 @@ async function feedAt(entry) {
   }
   await refresh();
 }
-get('feed').onclick = () => feedAt(.5);
 get('drop-zone').onclick = event => {
   const rect = event.currentTarget.getBoundingClientRect();
   const x = event.detail ? (event.clientX-rect.left)/rect.width : .5;
