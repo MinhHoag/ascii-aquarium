@@ -181,13 +181,13 @@ footer{display:flex;justify-content:space-between;gap:10px;color:var(--muted);fo
 .is-fullscreen .customize[open] summary{cursor:grab;touch-action:none;user-select:none}
 .is-fullscreen .customize[open] summary:active{cursor:grabbing}
 
-.fish-menu summary{background:#f2f2f2;color:#111;border-radius:11px}
+.fish-menu summary{color:var(--ink);font-family:system-ui,sans-serif;font-weight:650;font-size:14px;border-radius:11px}
 #fish-roster form{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px;margin-top:15px}
 #fish-roster span{font-size:clamp(15px,2.4vw,20px);white-space:pre;overflow:auto;padding:8px 0}
 .fish-name-help{color:#bdbdbd;font-size:12px;line-height:1.6;margin:0 0 14px}
 
 .fish-menu{flex:0 0 auto;min-width:0;max-width:100%;box-sizing:border-box}
-.fish-menu summary{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;min-width:0}
+.fish-menu summary{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;min-height:42px;min-width:0}
 .fish-menu summary:before{margin-right:0}
 .fish-menu-content{box-sizing:border-box;width:min(420px,calc(100vw - 32px));max-width:calc(100vw - 32px);overflow-x:hidden}
 #fish-roster form{grid-template-columns:minmax(0,1.3fr) minmax(90px,1fr)}
