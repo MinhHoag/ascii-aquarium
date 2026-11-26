@@ -1320,7 +1320,8 @@ function gravelContact(x) {
 
 function sceneryRow(piece,row) {
   const above = piece.rows.length-1-row;
-  const sway = piece.plant ? Math.sin(time*1.6+piece.phase-row*.25)*above*.7 : 0;
+  const swayStrength = piece.plant ? .7 : piece.coral ? .35 : 0;
+  const sway = Math.sin(time*1.6+piece.phase-row*.25)*above*swayStrength;
   return {x:piece.x+sway,y:piece.base-above*piece.size*piece.rowPitch};
 }
 
