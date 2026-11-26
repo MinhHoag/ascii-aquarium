@@ -4,10 +4,12 @@ const ctx = canvas.getContext('2d');
 const palette = ['#62ffe4','#ffad63','#fa92e4','#98a9ff','#fff18b','#78d7ff'];
 const parts = {
   heads: ['o>', 'O>', '.>'],
-  bodies: ['((((((', '(((', '((((', '((((('],
-  fins: ['', '^', '', '/\\', '^^'],
+  bodies: ['(((((', '-===-', '(oo)', '/###\\', '(((', '<==>'],
+  fins: ['', '', '^', '', '', '^', ''],
   tails: ['><', '>><', '><-', '><']
 };
+const bodyProfiles = ['pear','puffer','carp','oval'];
+const bodyLengths = [3,4,5,6,7];
 const maxFish = 16;
 const fish = [];
 
@@ -15,14 +17,19 @@ function makeFish(i,x,y,random=false) {
   const pick = (options, offset) => options[random ?
     Math.floor(Math.random()*options.length) : (i+offset)%options.length];
   const head = pick(parts.heads,0);
-  const body = pick(parts.bodies,1);
+  const template = pick(parts.bodies,1);
+  const length = pick(bodyLengths,2);
+  const profile = pick(bodyProfiles,0);
+  const interior = template.slice(1,-1);
+  const body = template[0]+Array.from({length:length-2},(_,index)=>
+    interior[Math.floor(index*interior.length/(length-2))]).join('')+template.at(-1);
   const fin = pick(parts.fins,2);
   const tail = pick(parts.tails,3);
   return {
-    head,body,fin,tail,
+    head,body,fin,tail,length,profile,
     color:palette[i%palette.length],
     x,y,dx:0,dy:0, dir:i%2 ? -1 : 1, pace:.87+(i%6)*.047,
-    passUntil:0, passBites:0, coastUntil:0, biteUntil:0, fullUntil:0
+    passUntil:0, passBites:0, coastUntil:0, biteUntil:0, fullUntil:0, belly:0, fullness:0
   };
 }
 
@@ -58,7 +65,7 @@ const decorations = [
   {name:'Rock', at:.22, color:'#aaa', rows:['   ____',' _/ .  \\','/ .   . \\','\\_______/']},
   {name:'Pink coral', at:.44, coral:true, color:'#ff458c', tips:'#ff9be9', rows:[' Y    Y',' |  Y |',' \\  |/ ','  \\ |  ','   \\|  ','  __|_ ']},
   {name:'Orange coral', at:.57, coral:true, color:'#ff773d', tips:'#ffda65', rows:[' * *  *',' \\ | */','  \\|/  ','   |   ',' _/|\\_ ']},
-  {name:'Treasure chest', at:.80, color:'#bdbdbd', rows:[' .------.','/_______/|','|  [#]  ||','|_______|/']},
+  {name:'Treasure chest', chest:true, at:.80, color:'#d8a34d', rows:[' .--------.','/_________/|','|===|#|===||','|_________|/']},
   ...seagrass.map((rows,i)=>({
     name:['Lime seagrass','Mint seagrass','Green seagrass'][i],rows,
     color:['#b2ff63','#4dffab','#37df91'][i],plant:true
@@ -329,9 +336,14 @@ document.addEventListener('pointerdown',()=>{
   if (layout.some(item=>armedTimers.has(item))) unlockTimerAudio();
 }, {passive:true});
 
-const photoColumns = 48;
-const photoRows = 20;
+const photoColumns = 72;
+const photoRows = 58;
+const importPhotoColumns = 44;
+const importPhotoRows = 34;
+const photoRowPitch = .72;
+const photoWidthScale = .9;
 const shades = ' .:-=+*#%@';
+const photoShades = '.,:;irs+=*#%@';
 function photoFrame(rows) {
   const columns = Math.min(photoColumns,String(rows[0] ?? '').length);
   const edge = '+'+'-'.repeat(columns)+'+';
@@ -371,14 +383,10 @@ function paintPhotoPreview(element,photo) {
   });
 }
 
-async function convertPhoto(url,columns=photoColumns,rowCount=photoRows,aspect=columns/(rowCount*2)) {
+async function convertPhoto(url,columns,rowCount,aspect) {
   const image = new Image();
   image.src = url;
   await image.decode();
-  const thumb = document.createElement('canvas');
-  thumb.width = columns;
-  thumb.height = rowCount;
-  const dc = thumb.getContext('2d');
   const working = document.createElement('canvas');
   const scale = Math.min(1,480/image.naturalHeight,854/image.naturalWidth);
   working.height = Math.max(1,Math.round(image.naturalHeight*scale));
@@ -386,10 +394,24 @@ async function convertPhoto(url,columns=photoColumns,rowCount=photoRows,aspect=c
   const source = working.getContext('2d');
   source.imageSmoothingQuality = 'high';
   source.drawImage(image,0,0,working.width,working.height);
-  const cropWidth = Math.min(working.width,working.height*aspect);
-  const cropHeight = cropWidth/aspect;
-  dc.fillStyle = '#000';
-  dc.fillRect(0,0,columns,rowCount);
+  const framed = aspect === undefined;
+  let cropWidth = working.width, cropHeight = working.height;
+  if (framed) {
+    const gridAspect = (working.width/working.height)*photoRowPitch/(photoWidthScale*cell/unit);
+    columns = Math.max(1,Math.min(importPhotoColumns,Math.round(importPhotoRows*gridAspect)));
+    rowCount = Math.max(1,Math.min(importPhotoRows,Math.round(columns/gridAspect)));
+  } else {
+    cropWidth = Math.min(working.width,working.height*aspect);
+    cropHeight = cropWidth/aspect;
+  }
+  const thumb = document.createElement('canvas');
+  thumb.width = columns;
+  thumb.height = rowCount;
+  const dc = thumb.getContext('2d');
+  if (!framed) {
+    dc.fillStyle = '#000';
+    dc.fillRect(0,0,columns,rowCount);
+  }
   dc.imageSmoothingQuality = 'high';
   dc.drawImage(working,(working.width-cropWidth)*.5,(working.height-cropHeight)*.5,
     cropWidth,cropHeight,0,0,columns,rowCount);
@@ -400,9 +422,13 @@ async function convertPhoto(url,columns=photoColumns,rowCount=photoRows,aspect=c
     for (let x=0;x<columns;x++) {
       const i = (y*columns+x)*4;
       const [r,g,b] = pixels.subarray(i,i+3);
-      const luma = (r*.2126+g*.7152+b*.0722)/255;
-      row += shades[Math.round(Math.sqrt(luma)*(shades.length-1))];
-      colorRow += [r,g,b].map(channel=>channel.toString(16).padStart(2,'0')).join('');
+      const peak = Math.max(r,g,b);
+      const luma = r*.2126+g*.7152+b*.0722;
+      const ramp = framed ? photoShades : shades;
+      const tone = framed ? luma*.8+peak*.2 : luma;
+      row += framed && pixels[i+3]<20 ? ' ' : ramp[Math.round(Math.sqrt(tone/255)*(ramp.length-1))];
+      const lift = framed ? Math.max(0,64-peak*.7) : 0;
+      colorRow += [r,g,b].map(channel=>Math.round(channel+lift).toString(16).padStart(2,'0')).join('');
     }
     rows.push(row);
     colors.push(colorRow);
@@ -477,7 +503,7 @@ get('add-personal').onclick = ()=>{
   if (get('add-personal').disabled) return;
   const kind = decorations[personalType].kind;
   const extra = kind === 'words' ? {text:get('word-input').value.trim()} :
-    kind === 'photo' ? {ascii:photoData.rows,asciiColors:photoData.colors} :
+    kind === 'photo' ? {ascii:photoData.rows,asciiColors:photoData.colors,chunky:true} :
     kind === 'timer' ? {duration:Number(get('timer-input').value)*60} : {};
   if (kind === 'timer') extra.endsAt = Date.now()+extra.duration*1000;
   addItem(personalType,extra);
@@ -624,11 +650,12 @@ canvas.onpointerdown = event => {
     canvas.setPointerCapture(event.pointerId);
     return;
   }
-  const piece = scenery.findLast(piece=>{
+  const hits = scenery.filter(piece=>{
     const box = piece.resizable ? resizeBounds(piece) :
       {left:piece.x-4,right:piece.x+piece.span+4,top:sceneryRow(piece,0).y-piece.size,bottom:piece.base+6};
     return x>=box.left && x<=box.right && y>=box.top && y<=box.bottom;
   });
+  const piece = hits.find(piece=>piece.item === selected && piece.kind === 'photo') ?? hits.at(-1);
   if (!piece) {
     selectDecoration(null);
     return;
@@ -654,7 +681,7 @@ canvas.onpointermove = event => {
     const piece = scenery.find(piece=>piece.item === drag.item);
     if (!piece) return;
     if (Math.hypot(x-drag.startX,y-drag.startY)>=unit) drag.moved = true;
-    moveDecoration(piece,x+drag.dx,y+drag.dy);
+    moveStack(piece,x+drag.dx,y+drag.dy);
     if (finishedTimer(drag.item)) checkShake(piece,x,event.timeStamp);
   }
 };
@@ -663,6 +690,10 @@ canvas.onpointercancel = () => {
 };
 canvas.onlostpointercapture = () => {
   if (drag) {
+    if (!drag.moved && !drag.handle && decorations[drag.item.type].chest) {
+      drag.item.open = !drag.item.open;
+      buildScenery();
+    }
     if (drag.moved && !drag.handle && finishedTimer(drag.item)) {
       const piece = scenery.find(piece=>piece.item === drag.item);
       if (piece) {
@@ -799,15 +830,29 @@ function buildScenery() {
 const personalGap = 2;
 
 function personalOverlap(piece,peers) {
-  if (!piece.kind) return false;
+  if (!piece.kind || piece.kind === 'words') return false;
   const box = resizeBounds(piece);
   return peers.some(other=>{
-    if (!other.kind || other.item === piece.item) return false;
+    if (!other.kind || other.kind === 'words' || other.item === piece.item) return false;
     const edge = resizeBounds(other);
     const gap = personalGap-.001;
     return box.right+gap>edge.left && box.left<edge.right+gap &&
       box.bottom+gap>edge.top && box.top<edge.bottom+gap;
   });
+}
+
+function personalOverlapArea(piece) {
+  if (piece.kind === 'words') return 0;
+  const box = resizeBounds(piece);
+  let area = 0;
+  for (const other of scenery) {
+    if (!other.kind || other.kind === 'words' || other.item === piece.item) continue;
+    const edge = resizeBounds(other);
+    const overlapX = Math.min(box.right,edge.right)-Math.max(box.left,edge.left)+personalGap-.001;
+    const overlapY = Math.min(box.bottom,edge.bottom)-Math.max(box.top,edge.top)+personalGap-.001;
+    area += Math.max(0,overlapX)*Math.max(0,overlapY);
+  }
+  return area;
 }
 
 function fitPersonalItem(piece,peers) {
@@ -841,7 +886,9 @@ function makeScenery(item,i) {
   const asset = decorations[item.type];
   const sizeFactor = appearanceSize(item)/100;
   const piece = {...asset,item,phase:i,color:appearanceColor(item,asset),
+    rowPitch:asset.kind === 'photo' ? photoRowPitch : .87,
     size:unit*(asset.plant ? (i%2 ? .93 : 1.28) : .96)};
+  if (asset.chest && item.open) piece.rows = ['    /| .--------.','   / |/ o $ @ o/|','  /__||===|#|===||','      |_________|/'];
   if (asset.kind === 'timer') piece.size *= .67;
   if (asset.kind === 'words') piece.rows = [String(item.text || 'ASCII').slice(0,28)];
   if (asset.kind === 'turntable') {
@@ -853,17 +900,20 @@ function makeScenery(item,i) {
     piece.rows = photoFrame(item.ascii);
     piece.photoRuns = piece.rows.slice(1,-1).map((line,row)=>
       photoRuns(line.slice(1,-1),Array.isArray(item.asciiColors) ? item.asciiColors[row] : null));
-    if (item.ascii[0].length>24) piece.size *= .66;
+    if (!item.chunky && (item.ascii[0].length>24 || item.ascii.length>20)) {
+      piece.size *= .66*Math.min(1,48/Math.max(item.ascii[0].length,item.ascii.length*.7));
+    }
   }
   const columns = Math.max(...piece.rows.map(line=>line.length));
+  const cellWidth = cell*(asset.kind === 'photo' ? photoWidthScale : 1);
   if (piece.resizable) {
-    const widthLimit = Math.max(1,width-18)*unit/(columns*cell);
-    const heightLimit = (gravelContact(width*.5)-height*.14-12)/((piece.rows.length-1)*.87+.9);
+    const widthLimit = Math.max(1,width-18)*unit/(columns*cellWidth);
+    const heightLimit = (gravelContact(width*.5)-height*.14-12)/((piece.rows.length-1)*piece.rowPitch+.9);
     piece.size = Math.min(piece.size,Math.min(widthLimit,heightLimit)/1.75)*sizeFactor;
   } else {
     piece.size = Math.min(piece.size*sizeFactor,width*.95*unit/(columns*cell));
   }
-  const charWidth = cell*piece.size/unit;
+  const charWidth = cellWidth*piece.size/unit;
   ctx.font = '700 ' + piece.size + 'px Consolas, monospace';
   const span = asset.kind === 'words' ? ctx.measureText(piece.rows[0]).width :
     columns*charWidth;
@@ -881,9 +931,45 @@ function makeScenery(item,i) {
 function placeDecoration(piece,x,y) {
   const inset = piece.resizable ? 9 : 0;
   piece.x = Math.max(inset,Math.min(width-piece.span-inset,x-piece.span*.5));
-  const top = piece.resizable ? height*.14+12+((piece.rows.length-1)*.87+.9)*piece.size :
+  const top = piece.resizable ? height*.14+12+((piece.rows.length-1)*piece.rowPitch+.9)*piece.size :
     height*.15+piece.rows.length*piece.size;
   piece.base = Math.max(top,Math.min(gravelContact(piece.x+piece.span*.5),y));
+}
+
+function moveStack(piece,x,y) {
+  const group = new Set([piece]);
+  if (piece.kind && piece.kind !== 'words') {
+    for (const support of group) {
+      const base = resizeBounds(support);
+      for (const other of scenery) {
+        if (!other.kind || other.kind === 'words' || group.has(other)) continue;
+        const box = resizeBounds(other);
+        if (box.right>base.left && box.left<base.right &&
+            Math.abs(box.bottom+personalGap-base.top)<3) group.add(other);
+      }
+    }
+  }
+  if (group.size === 1) {
+    moveDecoration(piece,x,y);
+    return;
+  }
+  const dx = x-piece.x-piece.span*.5, dy = y-piece.base;
+  const steps = Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/6));
+  const peers = scenery.filter(other=>!group.has(other));
+  for (let step=0;step<steps;step++) {
+    for (const axis of ['x','base']) {
+      const delta = (axis === 'x' ? dx : dy)/steps;
+      for (const member of group) member[axis] += delta;
+      const blocked = [...group].some(member=>{
+        const box = resizeBounds(member);
+        return box.left<4 || box.right>width-4 || box.top<height*.14+8 ||
+          member.base>gravelContact(member.x+member.span*.5) ||
+          personalOverlap(member,peers);
+      });
+      if (blocked) for (const member of group) member[axis] -= delta;
+    }
+  }
+  for (const member of group) storePosition(member);
 }
 
 function moveDecoration(piece,x,y) {
@@ -894,12 +980,17 @@ function moveDecoration(piece,x,y) {
     const steps = Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/6));
     piece.x = startX;
     piece.base = startY;
+    let overlap = personalOverlapArea(piece);
     for (let step=0;step<steps;step++) {
       const previousX = piece.x, previousY = piece.base;
       piece.x += dx/steps;
-      if (personalOverlap(piece,scenery)) piece.x = previousX;
+      const horizontalOverlap = personalOverlapArea(piece);
+      if (horizontalOverlap > overlap) piece.x = previousX;
+      else overlap = horizontalOverlap;
       piece.base += dy/steps;
-      if (personalOverlap(piece,scenery)) piece.base = previousY;
+      const verticalOverlap = personalOverlapArea(piece);
+      if (verticalOverlap > overlap) piece.base = previousY;
+      else overlap = verticalOverlap;
     }
     piece.base = Math.min(piece.base,gravelContact(piece.x+piece.span*.5));
   }
@@ -913,15 +1004,16 @@ function storePosition(piece) {
 }
 
 function personalSupport(piece,bed) {
-  if (!piece.kind) return bed;
+  if (!piece.kind || piece.kind === 'words') return bed;
   const box = resizeBounds(piece);
   let floor = bed;
   for (const other of scenery) {
-    if (!other.kind || other.item === piece.item) continue;
+    if (!other.kind || other.kind === 'words' || other.item === piece.item) continue;
     const edge = resizeBounds(other);
-    if (box.right+personalGap<=edge.left || box.left>=edge.right+personalGap) continue;
+    const gap = personalGap-.001;
+    if (box.right+gap<=edge.left || box.left>=edge.right+gap) continue;
     const support = edge.top-6-personalGap;
-    if (support >= piece.base-.001) floor = Math.min(floor,support);
+    if (edge.bottom > box.bottom) floor = Math.min(floor,support);
   }
   return floor;
 }
@@ -933,6 +1025,10 @@ function settleDecorations(elapsed) {
     if (piece.floating || piece.item === held) continue;
     const bed = gravelContact(piece.x+piece.span*.5);
     const floor = personalSupport(piece,bed);
+    if (piece.base > floor && personalOverlap(piece,scenery) && floor >= height*.14+8+piece.base-resizeBounds(piece).top) {
+      piece.base = floor;
+      landed = true;
+    }
     if (piece.base < floor) {
       piece.fallSpeed = Math.min(height*.55,(piece.fallSpeed ?? 0)+height*1.2*elapsed);
       piece.base = Math.min(floor,piece.base+piece.fallSpeed*elapsed);
@@ -956,6 +1052,7 @@ for (const item of layout) {
     if (!layout.includes(item)) return;
     item.ascii = photo.rows;
     item.asciiColors = photo.colors;
+    item.chunky = true;
     delete item.image;
     buildScenery();
     saveLayout();
@@ -1097,13 +1194,19 @@ function gravelContact(x) {
 function sceneryRow(piece,row) {
   const above = piece.rows.length-1-row;
   const sway = piece.plant ? Math.sin(time*1.6+piece.phase-row*.25)*above*.7 : 0;
-  return {x:piece.x+sway,y:piece.base-above*piece.size*.87};
+  return {x:piece.x+sway,y:piece.base-above*piece.size*piece.rowPitch};
 }
 
 function pelletFloor(x,previousY) {
   let floor = gravelContact(x)-unit*.1;
   for (const piece of scenery) {
-    if (piece.kind || x<piece.x-5 || x>piece.x+piece.span+5) continue;
+    if (x<piece.x-5 || x>piece.x+piece.span+5) continue;
+    if (piece.kind) {
+      const box = resizeBounds(piece);
+      const top = box.top+4;
+      if (x>=box.left && x<=box.right && top>=previousY-unit*.12) floor = Math.min(floor,top);
+      continue;
+    }
     for (let row=0;row<piece.rows.length;row++) {
       const origin = sceneryRow(piece,row);
       const col = Math.floor((x-origin.x)/piece.charWidth);
@@ -1195,7 +1298,9 @@ function movePellet(pellet,elapsed) {
       pellet.x = Math.max(.012,Math.min(.988,pellet.x));
       pellet.drift = Math.abs(pellet.drift)*(pellet.x < .5 ? 1 : -1);
     }
-    pellet.fall = Math.min(.19,pellet.fall+.046*elapsed);
+    const depth = Math.max(0,Math.min(1,(pellet.y-.055)/.8));
+    const settlingSpeed = .12-.095*depth;
+    pellet.fall += (settlingSpeed-pellet.fall)*(1-Math.exp(-elapsed*4));
     pellet.drift *= Math.exp(-elapsed*.55);
   }
   const floor = pelletFloor(pellet.x*width,pellet.y*height);
@@ -1209,22 +1314,31 @@ function movePellet(pellet,elapsed) {
 }
 
 function serveFood(entry=.44+Math.random()*.12) {
-  const meal = {remaining:Math.max(14,fish.length*2), bites:new Map()};
+  const meal = {started:time,remaining:Math.max(14,fish.length*2), bites:new Map()};
   for (let i=0;i<meal.remaining;i++) {
     pellets.push({
       ...food[i%food.length], meal, x:entry, y:.055,
       drift:(i%2 ? 1 : -1)*(.023+Math.random()*.052), fall:.035+Math.random()*.04,
-      phase:Math.random()*Math.PI*2, starts:time+i*.14, ends:time+i*.14+17
+      phase:Math.random()*Math.PI*2, starts:time+i*.14, ends:time+i*.14+26
     });
   }
 }
 
+const bellyDuration = 9;
+
 function currentShape(f) {
-  const fullness = Math.max(0,(f.fullUntil-time)/9);
-  const outer = 1+fullness*.425;
-  const inner = 1+fullness*.85;
-  const bodyWidth = cell*(2*outer+(f.body.length-2)*inner);
-  return {outer,inner,bodyWidth,span:bodyWidth+(f.head.length+f.tail.length)*cell};
+  const fullness = f.fullness;
+  const scales = Array.from(f.body,(_,i)=>{
+    const along = i/(f.body.length-1);
+    const taper = Math.sin(Math.PI*along);
+    const base = {pear:.1,puffer:.27,carp:.16,oval:.06}[f.profile] ?? 0;
+    const roundness = f.profile === 'oval' ? Math.sqrt(taper) : taper;
+    const pear = f.profile === 'pear' ? .7+.6*along : 1;
+    return 1+base*roundness+fullness*Math.min(1,f.body.length/6)*(.22+.78*roundness)*pear;
+  });
+  const widths = scales.map(scale=>1+(scale-1)*(f.profile === 'puffer' ? .8 : .6));
+  const bodyWidth = cell*widths.reduce((sum,scale)=>sum+scale,0);
+  return {scales,widths,bodyWidth,span:bodyWidth+(f.head.length+f.tail.length)*cell};
 }
 
 function finishMeal(meal) {
@@ -1238,7 +1352,11 @@ function finishMeal(meal) {
       winner = null;
     }
   }
-  if (winner) winner.fullUntil = time+9;
+  if (winner) {
+    const remaining = winner.belly*Math.max(0,(winner.fullUntil-time)/bellyDuration);
+    winner.belly = Math.min(1.85,Math.max(remaining,.65+biggest*.22));
+    winner.fullUntil = time+bellyDuration;
+  }
 }
 
 function bite(f,pellet) {
@@ -1314,7 +1432,9 @@ function moveFish(f, elapsed) {
     }
     const waypoint = steerAround(f,aim,padding,margin);
     const gap = distance(waypoint.x,waypoint.y);
-    const speed = (f.target ? .63 : .115)*f.pace;
+    const feedingDepth = f.target ? (f.target.y-.12)/.65 : 0;
+    const feedingRamp = Math.max(0,Math.min(1,feedingDepth));
+    const speed = (f.target ? .13+.5*feedingRamp : .115)*f.pace;
     const ease = 1-Math.exp(-elapsed*(f.detour ? 8 : f.target ? 5 : 2));
     const step = speed/Math.max(.03,gap);
     f.dx += ((waypoint.x-f.x)*step-f.dx)*ease;
@@ -1348,6 +1468,8 @@ function moveFish(f, elapsed) {
   }
 }
 
+let plantBubbles = [];
+
 function draw(now) {
   const elapsed = paused ? 0 : Math.min((now-previous)/1000,.05);
   previous = now;
@@ -1356,7 +1478,26 @@ function draw(now) {
     if (track.status === 'playing') recordAngle = (recordAngle+elapsed*1.15)%(Math.PI*2);
     settleDecorations(elapsed);
     for (const pellet of pellets) movePellet(pellet,elapsed);
-    for (const f of fish) moveFish(f,elapsed);
+    for (const f of fish) {
+      const target = f.belly*Math.max(0,Math.min(1,(f.fullUntil-time)/(bellyDuration-2)));
+      f.fullness += (target-f.fullness)*(1-Math.exp(-elapsed*5));
+      moveFish(f,elapsed);
+    }
+    for (const piece of scenery) {
+      if (!piece.plant) continue;
+      if (piece.nextBubble === undefined) piece.nextBubble = time+2+Math.random()*7;
+      if (time >= piece.nextBubble) {
+        const tip = sceneryRow(piece,1);
+        for (let i=0;i<10;i++) plantBubbles.push({
+          x:tip.x+piece.span*.5,y:tip.y,starts:time+i*.3,gray:Math.floor(Math.random()*5),phase:Math.random()*6
+        });
+        piece.nextBubble = time+5+Math.random()*9;
+      }
+    }
+    for (const bubble of plantBubbles) {
+      if (time>=bubble.starts) bubble.y -= elapsed*height*.065;
+    }
+    plantBubbles = plantBubbles.filter(bubble=>bubble.y>25);
     pellets = pellets.filter(pellet => {
       if (pellet.ends > time) return true;
       if (--pellet.meal.remaining === 0) finishMeal(pellet.meal);
@@ -1391,27 +1532,6 @@ function draw(now) {
       ink(pattern,x+row%2*5,top+row*gravelRowHeight,row<3 ? '#6a6a6a' : '#494949',9);
     }
   }
-  for (const f of fish) {
-    const {outer,inner,bodyWidth,span} = currentShape(f);
-    const head = time < f.biteUntil ? f.head.slice(0,-1)+'=' : f.head;
-    const [left,right] = f.dir===1 ? [f.tail,head] : [mirror(head),mirror(f.tail)];
-    const body = f.dir===1 ? f.body : mirror(f.body);
-    const x = f.x*width-span*.5;
-    const y = f.y*height;
-    const bodyX = x+left.length*cell;
-    ink(left,x,y,f.color,unit,8);
-    let glyphX = bodyX;
-    for (let i=0;i<body.length;i++) {
-      const scale = i === 0 || i === body.length-1 ? outer : inner;
-      ink(body[i],glyphX,y+(scale-1)*unit*.27,f.color,unit*scale,8);
-      glyphX += cell*scale;
-    }
-    ink(right,bodyX+bodyWidth,y,f.color,unit,8);
-    if (f.fin) {
-      const fin = f.dir===1 ? f.fin : mirror(f.fin);
-      ink(fin,bodyX+(bodyWidth-fin.length*cell)*.5,y-unit*(.84+(inner-1)*.5),f.color,unit,8);
-    }
-  }
   const wallTime = new Date();
   const timerReadouts = [];
   for (const piece of scenery) {
@@ -1434,21 +1554,59 @@ function draw(now) {
       const color = piece.tips && row < 2 ? piece.tips : piece.color;
       if (row === 1 && piece.kind === 'clock') line = '| '+clockText(wallTime)+' |';
       if (piece.kind === 'photo') {
+        ctx.save();
+        ctx.translate(x,0);
+        ctx.scale(photoWidthScale,1);
         if (row === 0 || row === piece.rows.length-1) {
           const grain = (row === 0 ? '=-' : '-=').repeat(line.length);
-          ink('+'+grain.slice(0,line.length-2)+'+',x,y,color,piece.size);
+          ink('+'+grain.slice(0,line.length-2)+'+',0,y,color,piece.size);
         } else {
           const edge = row%3 === 0 ? '#' : '|';
-          ink(edge,x,y,color,piece.size);
+          const advance = piece.charWidth/photoWidthScale;
+          ink(edge,0,y,color,piece.size);
           for (const run of piece.photoRuns?.[row-1] ?? []) {
-            if (run.text.trim()) ink(run.text,x+(1+run.at)*piece.charWidth,y,run.color,piece.size);
+            if (run.text.trim()) ink(run.text,(1+run.at)*advance,y,run.color,piece.size);
           }
-          ink(edge,x+piece.span-piece.charWidth,y,color,piece.size);
+          ink(edge,(line.length-1)*advance,y,color,piece.size);
         }
+        ctx.restore();
       } else {
         ink(line,x,y,color,piece.size,piece.plant || piece.tips ? 7 : 2);
       }
     });
+  }
+  for (const f of fish) {
+    const {scales,widths,bodyWidth,span} = currentShape(f);
+    const head = time < f.biteUntil ? f.head.slice(0,-1)+'=' : f.head;
+    const [left,right] = f.dir===1 ? [f.tail,head] : [mirror(head),mirror(f.tail)];
+    const body = f.dir===1 ? f.body : mirror(f.body);
+    const x = f.x*width-span*.5;
+    const y = f.y*height;
+    const bodyX = x+left.length*cell;
+    ink(left,x,y,f.color,unit,8);
+    let glyphX = bodyX;
+    for (let i=0;i<body.length;i++) {
+      const index = f.dir === 1 ? i : body.length-1-i;
+      const scale = scales[index];
+      const stretch = widths[index];
+      const bellyOffset = f.profile === 'pear' ? .48 : f.profile === 'carp' ? .15 : .27;
+      ctx.save();
+      ctx.translate(glyphX,0);
+      ctx.scale(stretch/scale,1);
+      ink(body[i],0,y+(scale-1)*unit*bellyOffset,f.color,unit*scale,8);
+      ctx.restore();
+      glyphX += cell*stretch;
+    }
+    ink(right,bodyX+bodyWidth,y,f.color,unit,8);
+    if (f.fin) {
+      const fin = f.dir===1 ? f.fin : mirror(f.fin);
+      ink(fin,bodyX+(bodyWidth-fin.length*cell*.7)*.5,y-unit*(.7+(Math.max(...scales)-1)*.5),f.color,unit*.7,5);
+    }
+  }
+  for (const bubble of plantBubbles) {
+    if (time<bubble.starts) continue;
+    const gray = ['#55555555','#77777766','#99999966','#b0b0b077','#d0d0d066'][bubble.gray];
+    ink('o',bubble.x+Math.sin(time*2+bubble.phase)*4,bubble.y,gray,9,0);
   }
   for (const {piece,x,y,text} of timerReadouts) {
     const size = piece.size*1.65;
