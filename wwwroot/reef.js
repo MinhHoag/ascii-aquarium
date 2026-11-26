@@ -638,6 +638,7 @@ function saveLayout() {
 }
 
 function updateEditor() {
+  const duplicates = new Map();
   placedAssets.replaceChildren(...layout.map(item=>{
     const asset = decorations[item.type];
     const row = document.createElement('li');
@@ -648,10 +649,21 @@ function updateEditor() {
     preview.className = 'placed-icon';
     preview.style.color = appearanceColor(item,asset);
     preview.setAttribute('aria-hidden','true');
-    preview.textContent = asset.kind ? {words:'Aa',photo:'[ ]',clock:'◷',timer:'00',turntable:'(@)'}[asset.kind] :
-      asset.plant ? '/|' : asset.tips ? 'Y' : '[]';
+    if (asset.kind === 'photo' && item.ascii?.length) {
+      const rows = item.ascii;
+      const thumbnail = Array.from({length:5},(_,i)=>{
+        const line = rows[Math.round(i*(rows.length-1)/4)];
+        return '|'+Array.from({length:11},(_,j)=>line[Math.round(j*(line.length-1)/10)] ?? ' ').join('')+'|';
+      });
+      preview.textContent = ['+-----------+',...thumbnail,'+-----------+'].join('\n');
+    } else {
+      preview.textContent = asset.rows.join('\n');
+    }
     const label = document.createElement('span');
-    label.textContent = asset.kind === 'words' ? item.text || asset.name : asset.name;
+    const name = asset.kind === 'words' ? item.text || asset.name : asset.name;
+    const number = (duplicates.get(name) ?? 0)+1;
+    duplicates.set(name,number);
+    label.textContent = name+(number > 1 ? ' '+number : '');
     button.append(preview,label);
     row.append(button);
     return row;

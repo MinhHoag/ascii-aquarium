@@ -199,3 +199,8 @@ footer{display:flex;justify-content:space-between;gap:10px;color:var(--muted);fo
 .is-fullscreen .fish-menu{margin-bottom:4px}
 .fish-menu summary:before{content:'';width:6px;height:6px;border-top:2px solid;border-left:2px solid;transform:translateY(2px) rotate(45deg)}
 .fish-menu[open] summary:before{content:'';transform:translateY(-2px) rotate(225deg)}
+
+.placed-assets{grid-template-columns:repeat(auto-fit,minmax(min(222px,100%),1fr));gap:8px;max-height:min(36dvh,22rem);scrollbar-width:thin;scrollbar-color:#656565 #181818}
+.placed-assets button{min-height:76px;height:100%;padding:7px;gap:11px;background:#1c1c1c}
+.placed-assets button:hover{background:#292929}
+.placed-icon{width:7rem;height:3.65rem;white-space:pre;font:700 .56rem/.88 var(--mono);overflow:hidden}
