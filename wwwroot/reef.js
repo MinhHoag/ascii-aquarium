@@ -231,7 +231,41 @@ document.addEventListener('keydown',event=>{
   fullscreenFallback = false;
   updateFullscreen();
 });
-editor.addEventListener('toggle',resetEditorIdle);
+editor.addEventListener('toggle',()=>{
+  resetEditorIdle();
+  if (!editor.open) {
+    editor.style.translate = '';
+    panelOffset = {x:0,y:0};
+  }
+});
+let panelOffset = {x:0,y:0}, panelDrag = null, panelMoved = false;
+const panelHandle = editor.querySelector('summary');
+panelHandle.addEventListener('pointerdown',event=>{
+  if (!editor.open || !frame.classList.contains('is-fullscreen') || event.button !== 0) return;
+  panelDrag = {x:event.clientX,y:event.clientY,offset:{...panelOffset},box:editor.getBoundingClientRect()};
+  panelMoved = false;
+  panelHandle.setPointerCapture(event.pointerId);
+});
+panelHandle.addEventListener('pointermove',event=>{
+  if (!panelDrag) return;
+  const dx = event.clientX-panelDrag.x, dy = event.clientY-panelDrag.y;
+  if (Math.hypot(dx,dy)>4) panelMoved = true;
+  if (!panelMoved) return;
+  const box = panelDrag.box;
+  panelOffset = {
+    x:panelDrag.offset.x+Math.max(8-box.left,Math.min(innerWidth-8-box.right,dx)),
+    y:panelDrag.offset.y+Math.max(8-box.top,Math.min(innerHeight-8-box.bottom,dy))
+  };
+  editor.style.translate = panelOffset.x+'px '+panelOffset.y+'px';
+  resetEditorIdle();
+});
+panelHandle.addEventListener('lostpointercapture',()=>{panelDrag=null;});
+panelHandle.addEventListener('click',event=>{
+  if (panelMoved) {
+    event.preventDefault();
+    panelMoved = false;
+  }
+});
 for (const event of ['pointermove','pointerdown','wheel','keydown','input','focusin','scroll']) {
   editor.addEventListener(event,resetEditorIdle,{passive:true});
 }
@@ -664,6 +698,14 @@ function addItem(type,extra={}) {
   }
   selected = item;
   buildScenery();
+  const added = scenery.find(piece=>piece.item === item);
+  if (added) {
+    added.dropTarget = added.floating ? added.base : null;
+    added.dropping = true;
+    added.base = (added.rows.length-1)*added.size*added.rowPitch+added.size;
+    added.fallSpeed = 0;
+    item.level = added.base/height;
+  }
   updateEditor();
   saveLayout();
   if (decorations[type].kind === 'turntable') refreshTrack();
@@ -1087,9 +1129,9 @@ function settleDecorations(elapsed) {
   const held = drag?.item;
   let landed = false;
   for (const piece of [...scenery].sort((a,b)=>b.base-a.base)) {
-    if (piece.floating || piece.item === held) continue;
+    if ((piece.floating && !piece.dropping) || piece.item === held) continue;
     const bed = gravelContact(piece.x+piece.span*.5);
-    const floor = personalSupport(piece,bed);
+    const floor = Math.min(personalSupport(piece,bed),piece.dropTarget ?? bed);
     if (piece.base > floor && personalOverlap(piece,scenery) && floor >= height*.14+8+piece.base-resizeBounds(piece).top) {
       piece.base = floor;
       landed = true;
@@ -1104,6 +1146,7 @@ function settleDecorations(elapsed) {
       piece.item.level = floor===bed ? 1 : floor/height;
       landed = true;
     }
+    if (piece.base === floor) piece.dropping = false;
     if (piece.base === floor && dropResetTimers.delete(piece.item)) resetTimer(piece.item);
   }
   if (landed) saveLayout();

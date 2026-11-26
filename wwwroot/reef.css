@@ -175,3 +175,8 @@ footer{display:flex;justify-content:space-between;gap:10px;color:var(--muted);fo
 #fish-roster span{font:700 12px var(--mono);overflow:hidden}
 #fish-roster input{width:100%;min-width:0;background:#090909;color:#ddd;border:1px solid #555;border-radius:6px;padding:8px}
 #fish-name-status{font-size:12px;color:#aaa}
+
+.aquarium .customize,.aquarium .is-fullscreen .customize,.fish-menu,.fish-menu-content{background:rgb(19 19 19 / 72%)}
+.aquarium .is-fullscreen .customize[open] summary{background:rgb(19 19 19 / 60%)}
+.is-fullscreen .customize[open] summary{cursor:grab;touch-action:none;user-select:none}
+.is-fullscreen .customize[open] summary:active{cursor:grabbing}
