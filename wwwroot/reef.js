@@ -688,7 +688,9 @@ get('item-color').oninput = get('item-size').oninput = changeAppearance;
 
 function addItem(type,extra={}) {
   if (layout.length >= 48) return;
-  const item = {type,at:.44+Math.random()*.12,level:type>=firstPersonal ? .65 : 1,...extra};
+  const asset = decorations[type];
+  const size = asset.plant || asset.coral ? 75+Math.floor(Math.random()*61) : 100;
+  const item = {type,size,at:.44+Math.random()*.12,level:type>=firstPersonal ? .65 : 1,...extra};
   layout.push(item);
   if (decorations[type].kind === 'timer' && item.endsAt>Date.now()) {
     armedTimers.add(item);
