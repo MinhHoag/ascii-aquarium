@@ -204,3 +204,9 @@ footer{display:flex;justify-content:space-between;gap:10px;color:var(--muted);fo
 .placed-assets button{min-height:76px;height:100%;padding:7px;gap:11px;background:#1c1c1c}
 .placed-assets button:hover{background:#292929}
 .placed-icon{width:7rem;height:3.65rem;white-space:pre;font:700 .56rem/.88 var(--mono);overflow:hidden}
+
+.placed-assets{grid-template-columns:repeat(auto-fill,minmax(min(123px,100%),1fr))}
+.placed-assets button{flex-direction:column;justify-content:center;text-align:center;gap:6px;min-height:95px;font-size:.78rem}
+.placed-icon{width:100%;height:3.85rem;font-size:.49rem;line-height:.92}
+.aquarium #remove-decoration{background:#60232a;border-color:#b44b55;color:#fff0f0}
+.aquarium #remove-decoration:not(:disabled):hover{background:#87303a}

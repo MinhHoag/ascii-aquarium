@@ -181,6 +181,9 @@ decorations.push(
     '      /\\', '   .-/__\\-.', '   |  ()  |', '   +------+', '    |////|', '    |    |', '   /|////|', '  /_|_[]_|__', ' /__________\\']}
 
 );
+for (const asset of decorations) {
+  if (!asset.kind && !asset.plant && !asset.coral) asset.resizable = true;
+}
 const layoutKey = 'ascii-aquarium-layout';
 function loadLayout() {
   try {
@@ -663,6 +666,9 @@ function updateEditor() {
         return '|'+Array.from({length:11},(_,j)=>line[Math.round(j*(line.length-1)/10)] ?? ' ').join('')+'|';
       });
       preview.textContent = ['+-----------+',...thumbnail,'+-----------+'].join('\n');
+    } else if (asset.kind === 'timer') {
+      const duration = timerDuration(item);
+      preview.textContent = globeRows(duration,duration,0).join('\n');
     } else {
       preview.textContent = asset.rows.join('\n');
     }
@@ -670,7 +676,8 @@ function updateEditor() {
     const name = asset.kind === 'words' ? item.text || asset.name : asset.name;
     const number = (duplicates.get(name) ?? 0)+1;
     duplicates.set(name,number);
-    label.textContent = name+(number > 1 ? ' '+number : '');
+    label.textContent = name+(number > 1 ? ' '+number : '')+
+      (asset.kind === 'timer' ? ' · '+timerDuration(item)/60+'m' : '');
     button.append(preview,label);
     row.append(button);
     return row;
@@ -688,10 +695,10 @@ function selectDecoration(item) {
     row.firstChild.setAttribute('aria-pressed',String(layout[i] === item)));
   get('remove-decoration').disabled = !item;
   const asset = item && decorations[item.type];
-  get('item-appearance').hidden = !asset?.kind;
+  get('item-appearance').hidden = !asset?.resizable;
   get('resize-hint').hidden = !asset?.resizable;
-  if (!asset?.kind) return;
-  get('item-color-label').textContent = asset.kind === 'words' ? 'Text color' : 'Frame color';
+  if (!asset?.resizable) return;
+  get('item-color-label').textContent = asset.kind === 'words' ? 'Text color' : 'Color';
   get('item-color').value = appearanceColor(item,asset);
   get('item-size').value = appearanceSize(item);
   get('item-size-value').textContent = appearanceSize(item)+'%';
@@ -705,7 +712,7 @@ function appearanceSize(item) {
   return decorations[item.type].kind === 'photo' ? 130 : 100;
 }
 function changeAppearance() {
-  if (!selected || !decorations[selected.type].kind) return;
+  if (!selected || !decorations[selected.type].resizable) return;
   const index = scenery.findIndex(piece=>piece.item === selected);
   const old = scenery[index];
   const previousSize = selected.size;
@@ -960,7 +967,7 @@ function buildScenery() {
   const placed = [];
   for (const [index,item] of layout.entries()) {
     const piece = makeScenery(item,index);
-    if (piece.kind) {
+    if (piece.resizable) {
       for (let attempt=0;!fitPersonalItem(piece,placed) && attempt<8;attempt++) {
         piece.size *= .78;
         piece.span *= .78;
@@ -976,10 +983,10 @@ function buildScenery() {
 const personalGap = 2;
 
 function personalOverlap(piece,peers) {
-  if (!piece.kind || piece.kind === 'words') return false;
+  if (!piece.resizable || piece.kind === 'words') return false;
   const box = resizeBounds(piece);
   return peers.some(other=>{
-    if (!other.kind || other.kind === 'words' || other.item === piece.item) return false;
+    if (!other.resizable || other.kind === 'words' || other.item === piece.item) return false;
     const edge = resizeBounds(other);
     const gap = personalGap-.001;
     return box.right+gap>edge.left && box.left<edge.right+gap &&
@@ -992,7 +999,7 @@ function personalOverlapArea(piece) {
   const box = resizeBounds(piece);
   let area = 0;
   for (const other of scenery) {
-    if (!other.kind || other.kind === 'words' || other.item === piece.item) continue;
+    if (!other.resizable || other.kind === 'words' || other.item === piece.item) continue;
     const edge = resizeBounds(other);
     const overlapX = Math.min(box.right,edge.right)-Math.max(box.left,edge.left)+personalGap-.001;
     const overlapY = Math.min(box.bottom,edge.bottom)-Math.max(box.top,edge.top)+personalGap-.001;
@@ -1007,7 +1014,7 @@ function fitPersonalItem(piece,peers) {
   const initial = resizeBounds(piece);
   const half = (initial.right-initial.left)*.5;
   const above = base-initial.top;
-  const others = peers.filter(other=>other.kind).map(resizeBounds);
+  const others = peers.filter(other=>other.resizable && other.kind !== 'words').map(resizeBounds);
   const xs = [center,...others.flatMap(box=>[box.left-half-personalGap,box.right+half+personalGap])];
   const ys = [base,...others.flatMap(box=>[box.top-6-personalGap,box.bottom+above+personalGap])];
   let best = null, nearest = Infinity;
@@ -1083,11 +1090,11 @@ function placeDecoration(piece,x,y) {
 
 function moveStack(piece,x,y) {
   const group = new Set([piece]);
-  if (piece.kind && piece.kind !== 'words') {
+  if (piece.resizable && piece.kind !== 'words') {
     for (const support of group) {
       const base = resizeBounds(support);
       for (const other of scenery) {
-        if (!other.kind || other.kind === 'words' || group.has(other)) continue;
+        if (!other.resizable || other.kind === 'words' || group.has(other)) continue;
         const box = resizeBounds(other);
         if (box.right>base.left && box.left<base.right &&
             Math.abs(box.bottom+personalGap-base.top)<3) group.add(other);
@@ -1120,7 +1127,7 @@ function moveStack(piece,x,y) {
 function moveDecoration(piece,x,y) {
   const startX = piece.x, startY = piece.base;
   placeDecoration(piece,x,y);
-  if (piece.kind) {
+  if (piece.resizable) {
     const dx = piece.x-startX, dy = piece.base-startY;
     const steps = Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/6));
     piece.x = startX;
@@ -1149,11 +1156,11 @@ function storePosition(piece) {
 }
 
 function personalSupport(piece,bed) {
-  if (!piece.kind || piece.kind === 'words') return bed;
+  if (!piece.resizable || piece.kind === 'words') return bed;
   const box = resizeBounds(piece);
   let floor = bed;
   for (const other of scenery) {
-    if (!other.kind || other.kind === 'words' || other.item === piece.item) continue;
+    if (!other.resizable || other.kind === 'words' || other.item === piece.item) continue;
     const edge = resizeBounds(other);
     const gap = personalGap-.001;
     if (box.right+gap<=edge.left || box.left>=edge.right+gap) continue;
@@ -1719,6 +1726,11 @@ function draw(now) {
         ctx.restore();
       } else {
         ink(line,x,y,color,piece.size,piece.plant || piece.tips ? 7 : 2);
+        if (!piece.kind && piece.resizable) {
+          ctx.lineWidth = Math.max(.5,piece.size*.055);
+          ctx.strokeStyle = color;
+          ctx.strokeText(line,x,y);
+        }
       }
     });
   }
