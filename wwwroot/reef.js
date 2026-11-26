@@ -128,7 +128,7 @@ const decorations = [
   {name:'Rock', at:.22, color:'#aaa', rows:['   ____',' _/ .  \\','/ .   . \\','\\_______/']},
   {name:'Pink coral', at:.44, coral:true, color:'#ff458c', tips:'#ff9be9', rows:[' Y    Y',' |  Y |',' \\  |/ ','  \\ |  ','   \\|  ','  __|_ ']},
   {name:'Orange coral', at:.57, coral:true, color:'#ff773d', tips:'#ffda65', rows:[' * *  *',' \\ | */','  \\|/  ','   |   ',' _/|\\_ ']},
-  {name:'Treasure chest', chest:true, at:.80, color:'#d8a34d', rows:[' .--------.','/_________/|','|===|#|===||','|_________|/']},
+  {name:'Treasure chest', at:.80, color:'#d8a34d', rows:[' .--------.','/_________/|','|===|#|===||','|_________|/']},
   ...seagrass.map((rows,i)=>({
     name:['Lime seagrass','Mint seagrass','Green seagrass'][i],rows,
     color:['#b2ff63','#4dffab','#37df91'][i],plant:true
@@ -797,10 +797,6 @@ canvas.onpointercancel = () => {
 };
 canvas.onlostpointercapture = () => {
   if (drag) {
-    if (!drag.moved && !drag.handle && decorations[drag.item.type].chest) {
-      drag.item.open = !drag.item.open;
-      buildScenery();
-    }
     if (drag.moved && !drag.handle && finishedTimer(drag.item)) {
       const piece = scenery.find(piece=>piece.item === drag.item);
       if (piece) {
@@ -995,7 +991,6 @@ function makeScenery(item,i) {
   const piece = {...asset,item,phase:i,color:appearanceColor(item,asset),
     rowPitch:asset.kind === 'photo' ? photoRowPitch : .87,
     size:unit*(asset.plant ? (i%2 ? .93 : 1.28) : .96)};
-  if (asset.chest && item.open) piece.rows = ['    /| .--------.','   / |/ o $ @ o/|','  /__||===|#|===||','      |_________|/'];
   if (asset.kind === 'timer') piece.size *= .67;
   if (asset.kind === 'words') piece.rows = [String(item.text || 'ASCII').slice(0,28)];
   if (asset.kind === 'turntable') {
