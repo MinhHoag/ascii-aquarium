@@ -131,7 +131,7 @@ const decorations = [
   {name:'Treasure chest', at:.80, color:'#d8a34d', rows:[' .--------.','/_________/|','|===|#|===||','|_________|/']},
   ...seagrass.map((rows,i)=>({
     name:['Lime seagrass','Mint seagrass','Green seagrass'][i],rows,
-    color:['#b2ff63','#4dffab','#37df91'][i],plant:true
+    color:['#b2ff63','#4dffab','#37df91'][i],plant:true,grass:true
   }))
 ];
 const stockLayout = [
@@ -163,16 +163,23 @@ decorations.push(
     '     .---.__', '  __/ .   . \\', ' / .  .---.  |', '|  . /     | |', '|___/      |_/']},
   {name:'Sea fan', at:.44, coral:true, color:'#f36bb5', tips:'#ffb1d9', rows:[
     '  *-*-* *-*-*', ' /|/|/ Y \\|\\|\\', ' \\|-+--+--+-|/', '  \\_|\\ | /|_/', '     \\| |/', '    __|_|__']},
-  {name:'Tube sponges', at:.57, coral:true, color:'#f28c56', tips:'#ffe0a0', rows:[
-    '       (oo)', ' (o)   |::| (o)', ' |:|   |::| |:|', ' |:|___|::|_|:|', ' \\____________/']},
+  {name:'Iron anchor', color:'#aab9c9', rows:[
+    '      (o)', '       |', '   ====+====', '       |', '  ^    |    ^', '  |\\   |   /|', '    \\__+__/']},
   {name:'Sunken observatory', at:.80, color:'#d3b281', rows:[
     '       _', '    .-^- -.', '   /   O   \\', '  /___|_|___\\', '  | []   [] |', ' _|___[_]___|_']},
   {name:'Ribbon kelp', color:'#a0ec83', plant:true, rows:[
     '        _/', '  __   /_/ ', ' /_/  /_/  ', '   \\ /_/', '    Y /', '    |/', '  __|__']},
   {name:'Feather fern', color:'#65e5b4', plant:true, rows:[
     '      ^', '    < | >', '   <==|==>', '    <=|=>', '     <|>', '      |', '   ___|___']},
-  {name:'Eelgrass tuft', color:'#70c99c', plant:true, rows:[
-    '  /     /', ' /   / /', ' | / |/  /', '  Y  |  /', '   \\ | /', '  __\\|/___']}
+  {name:'Eelgrass tuft', color:'#70c99c', plant:true, grass:true, rows:[
+    '  /     /', ' /   / /', ' | / |/  /', '  Y  |  /', '   \\ | /', '  __\\|/___']},
+  {name:'Pearl shell', color:'#f2bddc', rows:[
+    "   _.-''-._", ' _/ . (o) . \\_', ' \\____________/']},
+  {name:'Amphora', color:'#db9a71', rows:[
+    '     .---.', '     |___|', '  .--|   |--.', '  | /=====\\ |', '   / .:.:. \\', '   \\_______/']},
+  {name:'Broken lighthouse', color:'#c0cad5', rows:[
+    '      /\\', '   .-/__\\-.', '   |  ()  |', '   +------+', '    |////|', '    |    |', '   /|////|', '  /_|_[]_|__', ' /__________\\']}
+
 );
 const layoutKey = 'ascii-aquarium-layout';
 function loadLayout() {
@@ -725,7 +732,7 @@ function addItem(type,extra={}) {
   if (layout.length >= 48) return;
   const asset = decorations[type];
   const size = asset.plant || asset.coral ? 75+Math.floor(Math.random()*61) : 100;
-  const heightScale = asset.plant || asset.coral ? .75+Math.random()*.55 : 1;
+  const heightScale = asset.grass ? .75+Math.random()*.55 : 1;
   const item = {type,size,heightScale,at:.44+Math.random()*.12,level:asset.kind ? .65 : 1,...extra};
   layout.push(item);
   if (decorations[type].kind === 'timer' && item.endsAt>Date.now()) {
@@ -1025,7 +1032,7 @@ function makeScenery(item,i) {
   const asset = decorations[item.type];
   const sizeFactor = appearanceSize(item)/100;
   const piece = {...asset,item,phase:i,color:appearanceColor(item,asset),
-    rowPitch:asset.kind === 'photo' ? photoRowPitch : .87*(item.heightScale ?? 1),
+    rowPitch:asset.kind === 'photo' ? photoRowPitch : .87*(asset.grass ? item.heightScale ?? 1 : 1),
     size:unit*(asset.plant ? (i%2 ? .93 : 1.28) : .96)};
   if (asset.kind === 'timer') piece.size *= .67;
   if (asset.kind === 'words') piece.rows = [String(item.text || 'ASCII').slice(0,28)];
