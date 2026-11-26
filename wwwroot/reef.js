@@ -4,7 +4,7 @@ const ctx = canvas.getContext('2d');
 const palette = ['#62ffe4','#ffad63','#fa92e4','#98a9ff','#fff18b','#78d7ff'];
 const parts = {
   heads: ['o>', 'O>', '.>'],
-  bodies: ['-===-', '(oo)', '<==>', '((((('],
+  bodies: ['-===-', '(oo)', '<==>', '(.::.)', '\\___/', '(|:|)', '((((('],
   fins: ['', '', '^', '', '', '/\\', ''],
   tails: ['><', '>><', '><-', '><']
 };
