@@ -138,6 +138,13 @@ const stockLayout = [
   ...decorations.slice(0,4).map((piece,type)=>({type,at:piece.at,level:1})),
   ...[.045,.17,.34,.65,.87,.95].map((at,i)=>({type:4+i%3,at,level:1}))
 ];
+decorations.push(
+  {name:'Shell',color:'#f3b5d4',rows:['   .---.',' / /|/| /','(___|___)']},
+  {name:'Driftwood',color:'#bd916b',rows:['      __',' ____/ /___','(____   ___)','     |_/']},
+  {name:'Ceramic pot',color:'#de9274',rows:[' .----.',' / () /','|      |','|______|']},
+  {name:'Starfish',color:'#ffaf62',rows:['    /|',' __/ |__',' /  *  /',' /_/|_/']},
+  {name:'Anchor',color:'#9eacbf',rows:['   (o)','    |',' ---+---',' /  |  /','  --+--']}
+);
 const firstPersonal = decorations.length;
 const globeReadoutRow = 3;
 const globeOutline = [
@@ -163,7 +170,13 @@ function loadLayout() {
   try {
     const saved = JSON.parse(localStorage.getItem(layoutKey));
     if (Array.isArray(saved)) {
-      return saved.slice(0,48).filter(item=>item && decorations[item.type] &&
+      return saved.slice(0,48).map(item=>{
+        if (!item) return item;
+        const type = typeof item.assetName === 'string' ?
+          decorations.findIndex(asset=>asset.name === item.assetName) :
+          item.type>=7 ? item.type+5 : item.type;
+        return {...item,type};
+      }).filter(item=>item && decorations[item.type] &&
         Number.isInteger(item.type) && Number.isFinite(item.at) && Number.isFinite(item.level));
     }
   } catch {
@@ -608,7 +621,7 @@ get('add-personal').onclick = ()=>{
 
 function saveLayout() {
   try {
-    localStorage.setItem(layoutKey,JSON.stringify(layout));
+    localStorage.setItem(layoutKey,JSON.stringify(layout.map(item=>({...item,assetName:decorations[item.type].name}))));
   } catch {
     // Changes remain available for this visit.
   }
