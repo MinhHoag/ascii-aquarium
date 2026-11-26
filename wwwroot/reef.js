@@ -33,14 +33,62 @@ function makeFish(i,x,y,random=false) {
   };
 }
 
+function saveNamedFish() {
+  const named = fish.filter(f=>f.name).map(f=>({
+    name:f.name,head:f.head,body:f.body,fin:f.fin,tail:f.tail,length:f.length,
+    profile:f.profile,color:f.color,x:f.x,y:f.y,dir:f.dir,pace:f.pace
+  }));
+  try {
+    localStorage.setItem('ascii-aquarium-named-fish',JSON.stringify(named));
+    get('fish-name-status').textContent = '';
+  } catch {
+    get('fish-name-status').textContent = 'Could not save fish on this device.';
+  }
+}
+
+function renderFishRoster() {
+  const count = fish.filter(f=>f.name).length;
+  get('named-count').textContent = count+'/4 named';
+  get('fish-roster').replaceChildren(...fish.map((f,i)=>{
+    const row = document.createElement('form');
+    const preview = document.createElement('span');
+    preview.textContent = f.tail+f.body+f.head;
+    preview.style.color = f.color;
+    const input = document.createElement('input');
+    input.value = f.name || '';
+    input.maxLength = 20;
+    input.placeholder = 'Fish '+(i+1);
+    input.setAttribute('aria-label','Name fish '+(i+1));
+    const button = document.createElement('button');
+    button.textContent = 'Save';
+    button.type = 'submit';
+    row.onsubmit = event=>{
+      event.preventDefault();
+      const name = input.value.trim();
+      if (name && !f.name && fish.filter(other=>other.name).length>=4) {
+        get('fish-name-status').textContent = 'All four name slots are filled. Clear a saved name to free one.';
+        return;
+      }
+      f.name = name;
+      saveNamedFish();
+      renderFishRoster();
+    };
+    row.append(preview,input,button);
+    return row;
+  }));
+}
+
 function updateSchool() {
   get('fish-count').textContent = '('+fish.length+'/'+maxFish+')';
   get('add-fish').disabled = fish.length >= maxFish;
+  renderFishRoster();
 }
 
 function resetSchool() {
+  const named = fish.filter(f=>f.name);
   fish.length = 0;
-  for (let i=0;i<6;i++) {
+  fish.push(...named);
+  for (let i=named.length;i<6;i++) {
     fish.push(makeFish(i,[.23,.6,.42,.79,.34,.68][i],[.24,.39,.5,.66,.79,.82][i]));
   }
   updateSchool();
@@ -55,7 +103,24 @@ get('reset-tank').onclick = () => {
   pellets = [];
   resetSchool();
 };
+try {
+  const saved = JSON.parse(localStorage.getItem('ascii-aquarium-named-fish') || '[]');
+  if (Array.isArray(saved)) {
+    for (const entry of saved.slice(0,4)) {
+      if (!entry || typeof entry.name !== 'string' ||
+          !['head','body','tail','color','profile'].every(key=>typeof entry[key]==='string')) continue;
+      const f = makeFish(fish.length,.2+Math.random()*.6,.3+Math.random()*.4);
+      for (const key of ['head','body','tail','fin','color','profile']) {
+        if (typeof entry[key]==='string') f[key] = entry[key].slice(0,40);
+      }
+      f.name = entry.name.slice(0,20);
+      f.length = f.body.length;
+      fish.push(f);
+    }
+  }
+} catch {}
 resetSchool();
+get('fish-menu').ontoggle = ()=>{ if (get('fish-menu').open) renderFishRoster(); };
 const seagrass = [
   ['   /   ', '  (  / ', '   )/  ', ' \\ |   ', '  \\| / ', ' __|/__'],
   ['    /  ', ' /  )  ', ' ( / / ', '  )|/  ', ' \\ |   ', ' _\\|__ '],
@@ -1583,6 +1648,12 @@ function draw(now) {
     const x = f.x*width-span*.5;
     const y = f.y*height;
     const bodyX = x+left.length*cell;
+    if (f.name) {
+      const nameSize = unit*.65;
+      ctx.font = '700 '+nameSize+'px Consolas, monospace';
+      ink(f.name,f.x*width-ctx.measureText(f.name).width*.5,
+        y-unit*(1+Math.max(...scales)*.6),'#99999988',nameSize,0);
+    }
     ink(left,x,y,f.color,unit,8);
     let glyphX = bodyX;
     for (let i=0;i<body.length;i++) {

@@ -164,3 +164,14 @@ footer{display:flex;justify-content:space-between;gap:10px;color:var(--muted);fo
 .frame:has(.customize[open]) canvas:active{cursor:grabbing}
 @media(max-width:480px){.bar,.controls{padding-inline:10px}.controls>div{min-width:0}.controls .primary{padding:9px;white-space:nowrap}.primary span{display:none}}
 @media(max-width:480px){.customize{padding-inline:10px}.editor-tabs button,.library-switch button{padding-inline:9px}}
+
+.fullscreen-toggle,.fullscreen-toggle:hover{background:transparent;border-color:transparent;box-shadow:none}
+.fish-menu{position:relative;margin-left:auto;pointer-events:auto;border:1px solid #616161;border-radius:12px;background:#131313;font-family:var(--mono)}
+.fish-menu summary{cursor:pointer;padding:13px 16px;list-style:none;white-space:nowrap;font-weight:700}
+.fish-menu summary:before{content:'⌃';margin-right:8px}
+.fish-menu[open] summary:before{content:'⌄'}
+.fish-menu-content{position:absolute;right:0;bottom:100%;width:min(390px,85vw);max-height:65dvh;overflow:auto;background:#131313;border:1px solid #616161;border-radius:12px;padding:14px;box-shadow:0 8px 24px #0009}
+#fish-roster form{display:grid;grid-template-columns:minmax(90px,1fr) minmax(0,1fr) auto;gap:8px;align-items:center;margin-top:10px}
+#fish-roster span{font:700 12px var(--mono);overflow:hidden}
+#fish-roster input{width:100%;min-width:0;background:#090909;color:#ddd;border:1px solid #555;border-radius:6px;padding:8px}
+#fish-name-status{font-size:12px;color:#aaa}
