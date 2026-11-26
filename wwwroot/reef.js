@@ -87,7 +87,7 @@ function resetSchool() {
   fish.length = 0;
   fish.push(...named);
   for (let i=named.length;i<6;i++) {
-    fish.push(makeFish(i,[.23,.6,.42,.79,.34,.68][i],[.24,.39,.5,.66,.79,.82][i]));
+    fish.push(makeFish(i,.12+Math.random()*.76,.2+Math.random()*.6,true));
   }
   updateSchool();
 }
