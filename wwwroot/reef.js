@@ -4,8 +4,8 @@ const ctx = canvas.getContext('2d');
 const palette = ['#62ffe4','#ffad63','#fa92e4','#98a9ff','#fff18b','#78d7ff'];
 const parts = {
   heads: ['o>', 'O>', '.>'],
-  bodies: ['-===-', '(oo)', '/###\\', '<==>'],
-  fins: ['', '', '^', '', '', '^', ''],
+  bodies: ['-===-', '(oo)', '<==>', '((((('],
+  fins: ['', '', '^', '', '', '/\\', ''],
   tails: ['><', '>><', '><-', '><']
 };
 const bodyProfiles = ['pear','puffer','carp','oval'];
@@ -17,7 +17,9 @@ function makeFish(i,x,y,random=false) {
   const pick = (options, offset) => options[random ?
     Math.floor(Math.random()*options.length) : (i+offset)%options.length];
   const head = pick(parts.heads,0);
-  const template = pick(parts.bodies,1);
+  const template = random
+    ? parts.bodies[Math.min(parts.bodies.length-1,Math.floor(Math.random()*(parts.bodies.length+.1)))]
+    : pick(parts.bodies,1);
   const length = pick(bodyLengths,2);
   const profile = pick(bodyProfiles,0);
   const interior = template.slice(1,-1);
@@ -52,7 +54,10 @@ function renderFishRoster() {
   get('fish-roster').replaceChildren(...fish.map((f,i)=>{
     const row = document.createElement('form');
     const preview = document.createElement('span');
-    preview.textContent = f.tail+f.body+f.head;
+    const silhouette = f.tail+f.body+f.head;
+    const finStart = f.tail.length+Math.floor((f.body.length-f.fin.length)/2);
+    const finRow = f.fin ? ' '.repeat(finStart)+f.fin : '';
+    preview.textContent = finRow.padEnd(silhouette.length)+'\n'+silhouette;
     preview.style.color = f.color;
     const input = document.createElement('input');
     input.value = f.name || '';
